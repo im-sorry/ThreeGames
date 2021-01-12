@@ -1,6 +1,5 @@
-const { CompressedPixelFormat } = require('three')
 const THREE = require('three')
-class Ball {
+class LittleBall {
   constructor(document, window) {
     this.document = document
     this.window = window
@@ -83,14 +82,14 @@ class Ball {
     }))
     mesh.position.y = y
     
-    const spin1 = new THREE.BoxGeometry(1, height, r * 2, 40, 40, 40)
+    const spin1 = new THREE.BoxBufferGeometry(1, height, r * 2, 40, 40, 40)
     const spin1Mesh = new THREE.Mesh(spin1, new THREE.MeshBasicMaterial({
       color
     }))
     spin1Mesh.position.y = y
     spin1Mesh.needCheckCollision = true
 
-    const spin2 = new THREE.BoxGeometry(1, height, r * 2, 40, 40, 40)
+    const spin2 = new THREE.BoxBufferGeometry(1, height, r * 2, 40, 40, 40)
     const spin2Mesh = new THREE.Mesh(spin2, new THREE.MeshBasicMaterial({
       color
     }))
@@ -220,6 +219,9 @@ class Ball {
     for(let mesh of this.mainMeshSet) {
       if (mesh.position.y > ballY) {
         this.object.remove(mesh.parent)
+        this.mainMeshSet.delete(mesh)
+        mesh.geometry.dispose()
+        mesh.material.dispose()
       }
     }
   }
@@ -251,4 +253,4 @@ class Ball {
     // this.renderer.setAnimationLoop(this.animation.bind(this))
   }
 }
-new Ball(document, window).render()
+new LittleBall(document, window).render()
