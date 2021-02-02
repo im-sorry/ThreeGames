@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>消消乐</title>
+  <style>
+    html,body{
+      padding: 0;
+      margin: 0;
+      width: 100%;
+      height:100%
+    }
+    body{
+      background-color: black;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="id"></canvas>
+  <script>
+    class Xiaoxiaole {
+      constructor(canvasId){
+        this.canvas = document.getElementById(canvasId)
+        this.ctx = this.canvas.getContext('2d')
+        this.width = this.canvas.width = window.innerWidth
+        this.height = this.canvas.height = window.innerHeight
+        this.cardNum = 20
+        this.cardRect = {
+          width: 30,
+          height: 30
+        }
+        this.startX = (this.width - this.cardRect.width * this.cardNum) / 2
+        this.startY = (this.height - this.cardRect.height * this.cardNum) / 2
+        this.Block = class {
+          constructor(x, y, r, color) {
+            this.x = x
+            this.y = y
+            this.color = color
+            this.r = r
+          }
+          draw(ctx) {
+            Xiaoxiaole.drawCircle(this.x, this.y, this.r, ctx, this.color, 'fill')
+          }
+        }
+        this.blocks = []
+      }
+      drawCheckerboard() {
+        let startX = this.startX,
+          startY = this.startY,
+          lengthX = this.cardNum * this.cardRect.width,
+          lengthY = this.cardNum * this.cardRect.height
+        for(let i = 0; i <= this.cardNum; i++) {
+          Xiaoxiaole.drawLine(this.ctx, startX, startY + i * this.cardRect.height, startX + lengthX,  startY + i * this.cardRect.height)
+          Xiaoxiaole.drawLine(this.ctx, startX + i * this.cardRect.width, this.startY, startX + i * this.cardRect.width, this.startY + lengthY)
+        }
+      }
+      produceBlocks() {
+        const r = this.cardRect.height - 2
+        for(let i = 0; i < this.cardNum; i ++) {
+          for(let j = 0; j < this.cardNum; j++) {
+            this.blocks.push(new this.Block())
+          }
+        }
+      }
+      getColor() {
+        const colors = [
+          {r: 255, g: 0, b: 0, a: 1},
+          {r: 0, g: 255, b: 0, a: 1},
+          {r: 0, g: 0, b: 255, a: 1},
+          {r: 255, g: 255, b: 0, a: 1},
+          {r: 0, g: 255, b: 255, a: 1},
+          {r: 255, g: 0, b: 255, a: 1},
+        ]
+        return colors[Xiaoxiaole.getRandomNumber(0, colors.length)]
+      }
+      run() {
+        this.drawCheckerboard()
+      }
+      static drawLine(ctx, startX, startY, endX, endY) {
+        ctx.save()
+        ctx.strokeStyle = `rgba(255,255,0,1)`
+        ctx.beginPath()
+        ctx.moveTo(startX, startY)
+        ctx.lineTo(endX, endY)
+        ctx.stroke()
+        ctx.restore()
+      }
+      static getRandomNumber(start, end) {
+        return Math.ceil(Math.random() * (end - start) + start)
+      }
+      static getRGB() {
+        let R = Xiaoxiaole.getRandomNumber(150, 250)
+        let G = Xiaoxiaole.getRandomNumber(150, 250)
+        let B = Xiaoxiaole.getRandomNumber(150, 250)
+        return { R, G, B }
+      }
+      static fillStar(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 250, G = 250, B = 200, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawStar(startX, startY, r, ctx, { R, G, B, A }, 'fill')
+      }
+      static strokeStar(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 250, G = 250, B = 200, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawStar(startX, startY, r, ctx, { R, G, B, A }, 'stroke')
+      }
+      static drawStar(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 250, G = 250, B = 200, A = 1 } = {},
+        type = 'stroke'
+      ) {
+        ctx.save()
+        ctx.beginPath()
+        ctx.translate(startX, startY)
+        ctx.fillStyle = `rgba(${R},${G},${B},${A})`
+        ctx.strokeStyle = `rgba(${R},${G},${B},${A})`
+        ctx.moveTo(r, 0)
+        for (let i = 0; i < 9; i++) {
+          ctx.rotate(Math.PI / 5)
+          if (i % 2 == 0) {
+            ctx.lineTo((r / 0.525731101) * 0.200811205, 0)
+          } else {
+            ctx.lineTo(r, 0)
+          }
+        }
+        ctx.closePath()
+        if (typeof ctx[type] === 'function') {
+          ctx[type]()
+        }
+        ctx.restore()
+      }
+      static strokeCircle(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 255, G = 255, B = 255, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawCircle(startX, startY, r, ctx, { R, G, B, A }, 'stroke')
+      }
+      static fillCircle(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 255, G = 255, B = 255, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawCircle(startX, startY, r, ctx, { R, G, B, A }, 'fill')
+      }
+      static drawCircle(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 255, G = 255, B = 255, A = 1 } = {},
+        type
+      ) {
+        ctx.save()
+        ctx.strokeStyle = `rgba(${R}, ${G}, ${B}, ${A})`
+        ctx.fillStyle = `rgba(${R}, ${G}, ${B}, ${A})`
+        ctx.beginPath()
+        ctx.arc(startX, startY, r, 0, Math.PI * 2, true)
+        if (typeof ctx[type] === 'function') {
+          ctx[type]()
+        }
+        ctx.restore()
+      }
+      static strokeHeart(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 200, G = 0, B = 0, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawHeart(startX, startY, r, ctx, { R, G, B, A }, 'stroke')
+      }
+      static fillHeart(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 200, G = 0, B = 0, A = 1 } = {}
+      ) {
+        Xiaoxiaole.drawHeart(startX, startY, r, ctx, { R, G, B, A }, 'fill')
+      }
+      static drawHeart(
+        startX,
+        startY,
+        r,
+        ctx,
+        { R = 200, G = 0, B = 0, A = 1 } = {},
+        type
+      ) {
+        let radian = 0 
+        let radianStep = Math.PI / 180
+        r = Xiaoxiaole.getHeartR(r)
+        ctx.save()
+        ctx.beginPath()
+        ctx.translate(startX, startY)
+        ctx.moveTo(Xiaoxiaole.getHeartX(radian, r), Xiaoxiaole.getHeartY(radian, r))
+        while (radian <= Math.PI * 2) {
+          radian += radianStep
+          let X = Xiaoxiaole.getHeartX(radian, r)
+          let Y = Xiaoxiaole.getHeartY(radian, r)
+          ctx.lineTo(X, Y)
+        }
+        ctx.strokeStyle = `rgba(${R},${G},${B},${A})`
+        ctx.fillStyle = `rgba(${R},${G},${B},${A})`
+        if (typeof ctx[type] === 'function') {
+          ctx[type]()
+        }
+        ctx.restore()
+      }
+      static getHeartX(radian, r) {
+        return r * (16 * Math.pow(Math.sin(radian), 3))
+      }
+      static getHeartY(radian, r) {
+        return (
+          -r *
+          (13 * Math.cos(radian) -
+            5 * Math.cos(2 * radian) -
+            2 * Math.cos(3 * radian) -
+            Math.cos(4 * radian))
+        )
+      }
+      static getHeartR(value) {
+        return value / 13
+      }
+      getRandomXYList(maxValue, span, num) {
+        let startXList = []
+        let rangeList = []
+    
+        function checkIsIn(value, rangeList) {
+          for (let range of rangeList) {
+            if (value >= range[0] && value <= range[1]) return true
+          }
+          return false
+        }
+        while (startXList.length < num) {
+          let startX = Xiaoxiaole.getRandomNumber(0, maxValue)
+          if (checkIsIn(startX, rangeList)) {
+            continue
+          }
+          startXList.push(startX)
+          rangeList.push([startX - span, startX + span * 2])
+        }
+        return startXList
+      }
+    }
+    new Xiaoxiaole('id').run()
+  </script>
+</body>
+</html>
