@@ -32,31 +32,57 @@
         }
         this.startX = (this.width - this.cardRect.width * this.cardNum) / 2
         this.startY = (this.height - this.cardRect.height * this.cardNum) / 2
+        this.animationDuration = 2
         this.Block = class {
-          constructor(x, y, r, color, ctx) {
+          constructor(x, y, r, color, ctx, i, j) {
             this.x = x
             this.y = y
             this.color = color
             this.r = r
             this.ctx = ctx
             this.clearColor = {
-             ...this.color,
-             A: 0.1
+              ...this.color,
+              A: 0.4
             }
+            this.i = i
+            this.j = j
+            this.animationDuration = 1000
+            this.disappearStep = (1 - 0.01) / (this.animationDuration / (1000 / 60))
+            this.A = 1
+            this.downStep = 0
           }
           get colorString() {
             return JSON.stringify(this.color)
           }
           draw() {
-            const color = this.is_waiting_clear ? this.clearColor : this.color
-            Xiaoxiaole.drawCircle(this.x, this.y, this.r, this.ctx, color, 'fill')
+            this.clearRect()
+            const color = this.color
+            // const color = this.is_waiting_clear ? this.clearColor : this.color
+            Xiaoxiaole.drawCircle(this.x, this.y, this.r, this.ctx, {...color, A: this.A}, 'fill')
+          }
+          clearRect() {
+            Xiaoxiaole.drawCircle(this.x, this.y, this.r, this.ctx, {R: 0, G: 0, B: 0, A: 1}, 'fill')
           }
           wait2clear() {
             this.is_waiting_clear = true
             this.draw()
           }
+          disappear() {
+            this.A -= this.disappearStep
+            this.draw()
+            if (this.A <= 0.01) return true
+            return false
+          }
+          addDownStep() {
+            if (this.is_waiting_clear) return
+            this.downStep ++
+            this.j ++
+            this.y += 30
+          }
         }
         this.blocks = []
+        this.signBlockSet = new Set()
+        this.signBlocks = []
       }
       drawCheckerboard() {
         let startX = this.startX,
@@ -68,11 +94,21 @@
           Xiaoxiaole.drawLine(this.ctx, startX + i * this.cardRect.width, this.startY, startX + i * this.cardRect.width, this.startY + lengthY)
         }
       }
+      clearCheckerBoard() {
+        let startX = this.startX,
+          startY = this.startY,
+          lengthX = this.cardNum * this.cardRect.width,
+          lengthY = this.cardNum * this.cardRect.height
+        Xiaoxiaole.drawRect(this.ctx, startX, startY, lengthX, lengthY)
+        this.drawCheckerboard()
+      }
       signBlock() {
         const work = (...blocks) => {
           if (new Set(blocks.map(b => b.colorString)).size === 1) {
-            console.log(1)
-            blocks.forEach(b => b.wait2clear())
+            blocks.forEach(b => {
+              b.wait2clear()
+              this.signBlockSet.add(b)
+            })
           }
         }
         for(let j = 0; j < this.cardNum; j ++) {
@@ -100,27 +136,68 @@
           for(let j = 0; j < this.cardNum; j++) {
             let x = this.startX + (j + 0.5) * this.cardRect.width,
               y = this.startY + (i + 0.5) * this.cardRect.height
-            const block = new this.Block(x, y, r, this.getColor(), this.ctx)
+            const block = new this.Block(x, y, r, this.getColor(), this.ctx, j, i)
             this.blocks[i].push(block)
             block.draw()
           }
         }
       }
+      async disappear() {
+        this.signBlocks = [...this.signBlockSet]
+        await new Promise(resolve => {
+          let timer = setInterval(() => {
+            for(let b of this.signBlockSet) {
+              if(b.disappear()) this.signBlockSet.delete(b)
+            }
+            if(!this.signBlockSet.size) {
+              clearInterval(timer)
+              resolve()
+            }
+          }, 1000 / 60)
+        })
+      }
+      async down() {
+        this.signBlocks.forEach(b => {
+          let i = b.i, j = b.j
+          this.blocks[j][i] = null
+          for(let x = j; x >=0; x --) {
+            this.blocks[x][i] && (this.blocks[x][i].addDownStep())
+          }
+        })
+        this.signBlocks = []
+        let newBlocks = []
+        for(let j = 0; j < this.cardNum; j++) {
+          newBlocks[j] = []
+          for(let i = 0; i < this.cardNum; i++) {
+            if (this.blocks[j][i]){
+              const newJ = this.blocks[j][i].j
+              console.log(newJ, j)
+              if (!newBlocks[newJ]) newBlocks[newJ] = []
+              newBlocks[newJ][i] = this.blocks[j][i]
+            }
+          }
+        }
+        this.blocks = newBlocks
+        this.clearCheckerBoard()
+        newBlocks.forEach(i => i.forEach(j => j && j.draw()))
+      }
       getColor() {
         const colors = [
           {R: 255, G: 0, B: 0, A: 1},
           {R: 0, G: 255, B: 0, A: 1},
-          {R: 0, G: 0, B: 255, A: 1},
+          {R: 250, G: 150, B: 155, A: 1},
           {R: 255, G: 255, B: 0, A: 1},
           {R: 0, G: 255, B: 255, A: 1},
           {R: 255, G: 0, B: 255, A: 1},
         ]
         return colors[Xiaoxiaole.getRandomNumber(0, colors.length)]
       }
-      run() {
+      async run() {
         this.drawCheckerboard()
         this.produceBlocks()
         this.signBlock()
+        await this.disappear()
+        this.down()
       }
       static drawLine(ctx, startX, startY, endX, endY) {
         ctx.save()
@@ -129,6 +206,17 @@
         ctx.moveTo(startX, startY)
         ctx.lineTo(endX, endY)
         ctx.stroke()
+        ctx.restore()
+      }
+      static drawRect(ctx, x, y, width, height, {R, G, B, A} = {R: 0, G: 0, B: 0, A: 1}, type = 'fill') {
+        ctx.save()
+        ctx.strokeStyle = `rgba(${R}, ${G}, ${B}, ${A})`
+        ctx.fillStyle = `rgba(${R}, ${G}, ${B}, ${A})`
+        ctx.beginPath()
+        ctx.rect(x, y, width, height)
+        if (typeof ctx[type] === 'function') {
+          ctx[type]()
+        }
         ctx.restore()
       }
       static getRandomNumber(start, end) {
