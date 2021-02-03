@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>消消乐</title>
+  <title>GUESS</title>
   <style>
     html,body{
       padding: 0;
@@ -33,14 +33,27 @@
         this.startX = (this.width - this.cardRect.width * this.cardNum) / 2
         this.startY = (this.height - this.cardRect.height * this.cardNum) / 2
         this.Block = class {
-          constructor(x, y, r, color) {
+          constructor(x, y, r, color, ctx) {
             this.x = x
             this.y = y
             this.color = color
             this.r = r
+            this.ctx = ctx
+            this.clearColor = {
+             ...this.color,
+             A: 0.1
+            }
           }
-          draw(ctx) {
-            Xiaoxiaole.drawCircle(this.x, this.y, this.r, ctx, this.color, 'fill')
+          get colorString() {
+            return JSON.stringify(this.color)
+          }
+          draw() {
+            const color = this.is_waiting_clear ? this.clearColor : this.color
+            Xiaoxiaole.drawCircle(this.x, this.y, this.r, this.ctx, color, 'fill')
+          }
+          wait2clear() {
+            this.is_waiting_clear = true
+            this.draw()
           }
         }
         this.blocks = []
@@ -55,28 +68,59 @@
           Xiaoxiaole.drawLine(this.ctx, startX + i * this.cardRect.width, this.startY, startX + i * this.cardRect.width, this.startY + lengthY)
         }
       }
+      signBlock() {
+        const work = (...blocks) => {
+          if (new Set(blocks.map(b => b.colorString)).size === 1) {
+            console.log(1)
+            blocks.forEach(b => b.wait2clear())
+          }
+        }
+        for(let j = 0; j < this.cardNum; j ++) {
+          for(let i = 0; i < this.cardNum; i++) {
+            if (this.blocks[j][i].is_waiting_clear) continue
+            if (this.blocks[j][i + 1] && this.blocks[j][i + 2]) {
+              work(this.blocks[j][i], this.blocks[j][i + 1], this.blocks[j][i + 2])
+            }
+            if (this.blocks[j][i - 1] && this.blocks[j][i - 2]) {
+              work(this.blocks[j][i], this.blocks[j][i - 1], this.blocks[j][i - 2])
+            }
+            if (this.blocks[j + 1] && this.blocks[j + 2] && this.blocks[j + 1][i] && this.blocks[j + 2][i]) {
+              work(this.blocks[j][i], this.blocks[j + 1][i], this.blocks[j + 2][i])
+            }
+            if (this.blocks[j - 1] && this.blocks[j - 1][i] && this.blocks[j - 2] && this.blocks[j - 2][i]) {
+              work(this.blocks[j][i], this.blocks[j - 1][i], this.blocks[j - 2][i])
+            }
+          }
+        }
+      }
       produceBlocks() {
-        const r = this.cardRect.height - 2
+        const r = this.cardRect.height / 2 - 2
         for(let i = 0; i < this.cardNum; i ++) {
           this.blocks[i] = []
           for(let j = 0; j < this.cardNum; j++) {
-            this.blocks[i].push(new this.Block())
+            let x = this.startX + (j + 0.5) * this.cardRect.width,
+              y = this.startY + (i + 0.5) * this.cardRect.height
+            const block = new this.Block(x, y, r, this.getColor(), this.ctx)
+            this.blocks[i].push(block)
+            block.draw()
           }
         }
       }
       getColor() {
         const colors = [
-          {r: 255, g: 0, b: 0, a: 1},
-          {r: 0, g: 255, b: 0, a: 1},
-          {r: 0, g: 0, b: 255, a: 1},
-          {r: 255, g: 255, b: 0, a: 1},
-          {r: 0, g: 255, b: 255, a: 1},
-          {r: 255, g: 0, b: 255, a: 1},
+          {R: 255, G: 0, B: 0, A: 1},
+          {R: 0, G: 255, B: 0, A: 1},
+          {R: 0, G: 0, B: 255, A: 1},
+          {R: 255, G: 255, B: 0, A: 1},
+          {R: 0, G: 255, B: 255, A: 1},
+          {R: 255, G: 0, B: 255, A: 1},
         ]
         return colors[Xiaoxiaole.getRandomNumber(0, colors.length)]
       }
       run() {
         this.drawCheckerboard()
+        this.produceBlocks()
+        this.signBlock()
       }
       static drawLine(ctx, startX, startY, endX, endY) {
         ctx.save()
@@ -88,7 +132,7 @@
         ctx.restore()
       }
       static getRandomNumber(start, end) {
-        return Math.ceil(Math.random() * (end - start) + start)
+        return Math.floor(Math.random() * (end - start) + start)
       }
       static getRGB() {
         let R = Xiaoxiaole.getRandomNumber(150, 250)
