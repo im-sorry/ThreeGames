@@ -58,8 +58,9 @@
       produceBlocks() {
         const r = this.cardRect.height - 2
         for(let i = 0; i < this.cardNum; i ++) {
+          this.blocks[i] = []
           for(let j = 0; j < this.cardNum; j++) {
-            this.blocks.push(new this.Block())
+            this.blocks[i].push(new this.Block())
           }
         }
       }
