@@ -9,7 +9,7 @@
       padding: 0;
       margin: 0;
       width: 100%;
-      height:100%
+      height:100%;
     }
     body{
       background-color: black;
@@ -20,7 +20,11 @@
 <body>
   <canvas id="id"></canvas>
   <script>
-    new Xiaoxiaole('id').run()
+    let xiaoxiaole = new Xiaoxiaole('id')
+    let countDown = new CountDown(xiaoxiaole.ctx, (xiaoxiaole.startX + xiaoxiaole.endX) / 2, xiaoxiaole.startY, xiaoxiaole)
+    xiaoxiaole.run()
+    xiaoxiaole.start()
+    countDown.start()
   </script>
 </body>
 </html>

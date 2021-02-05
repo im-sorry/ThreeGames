@@ -81,7 +81,7 @@ class Xiaoxiaole {
       }
     }
 
-    this.Score = class {
+    class Score {
       constructor(ctx, x, y) {
         this.ctx = ctx
         this.x = x
@@ -97,6 +97,9 @@ class Xiaoxiaole {
         this.draw()
       }
       reset() {
+        clearInterval(this.timer)
+        this.waitScores = []
+        this.status = 'wait'
         this.clear()
         this.scroe = 0
         this.draw()
@@ -124,9 +127,9 @@ class Xiaoxiaole {
         this.status = 'running'
         const step = this.waitScores.shift()
         const target = this.scroe + step
-        let timer = setInterval(() => {
+        this.timer = setInterval(() => {
           if (this.scroe >= target) {
-            clearInterval(timer)
+            clearInterval(this.timer)
             this.status = 'wait'
             this.run()
             return
@@ -147,7 +150,7 @@ class Xiaoxiaole {
         ctx.restore()
       }
     }
-    this.score = new this.Score(this.ctx, this.endX + 10, this.startY)
+    this.score = new Score(this.ctx, this.endX + 10, this.startY)
 
     class Button {
       constructor(ctx, x, y, text, game) {
@@ -191,6 +194,9 @@ class Xiaoxiaole {
     }
     this.buttons = []
     this.buttons.push(new StartControlButton(this.ctx, this.endX + 10, this.endY, '开始', this))
+  }
+  setCountDown(c){
+    this.countDown = c
   }
   init() {
     this.blocks = []
@@ -269,12 +275,12 @@ class Xiaoxiaole {
     }
     this.score.add(score)
     await new Promise(resolve => {
-      let timer = setInterval(() => {
+      this.timer = setInterval(() => {
         for(let b of this.signBlockSet) {
           if(b.disappear()) this.signBlockSet.delete(b)
         }
         if(!this.signBlockSet.size) {
-          clearInterval(timer)
+          clearInterval(this.timer)
           resolve()
         }
       }, 1000 / 60)
@@ -614,5 +620,47 @@ class Xiaoxiaole {
       rangeList.push([startX - span, startX + span * 2])
     }
     return startXList
+  }
+}
+class CountDown {
+  constructor(ctx, x, y, game) {
+    this.ctx = ctx
+    this.x = x
+    this.y = y - 20
+    this.time = 60
+    this.draw()
+  }
+  draw() {
+    this.clear()
+    const ctx = this.ctx
+    ctx.save()
+    ctx.font = "bold 20px sans-serif";
+    ctx.fillStyle = '#F00'
+    ctx.fillText(this.time, this.x, this.y)
+    ctx.restore()
+  }
+  clear() {
+    const length = `${this.time}`.length * 14
+    const ctx = this.ctx
+    ctx.save()
+    ctx.fillStyle = '#000'
+    ctx.rect(this.x, this.y - 20, length, 22)
+    ctx.fill()
+    ctx.restore()
+  }
+  reset() {
+    clearInterval(this.timer)
+    this.clear()
+    this.time = 60
+    this.draw()
+  }
+  start() {
+    this.timer = setInterval(() => {
+      this.time--
+      this.draw()
+      if (this.time === 0) {
+        clearInterval(this.timer)
+      }
+    }, 1000)
   }
 }
