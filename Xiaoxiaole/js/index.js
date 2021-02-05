@@ -150,13 +150,14 @@ class Xiaoxiaole {
     this.score = new this.Score(this.ctx, this.endX + 10, this.startY)
 
     class Button {
-      constructor(ctx, x, y, text) {
+      constructor(ctx, x, y, text, game) {
         this.ctx = ctx
         this.x = x
         this.y = y - 22
         this.text = text
         this.width = this.text.length * 20
         this.height = 22
+        this.game = game
         this.draw()
       }
       draw() {
@@ -184,10 +185,6 @@ class Xiaoxiaole {
       }
     }
     class StartControlButton extends Button {
-      constructor (ctx, x, y, name, game) {
-        super(ctx, x, y, name)
-        this.game = game
-      }
       run() {
         this.game.start()
       }
