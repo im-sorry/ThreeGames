@@ -12,6 +12,8 @@ class Xiaoxiaole {
     Xiaoxiaole.cardRect = this.cardRect
     this.startX = (this.width - this.cardRect.width * this.cardNum) / 2
     this.startY = (this.height - this.cardRect.height * this.cardNum) / 2
+    this.endX = this.startX + this.cardRect.width * this.cardNum
+    this.endY = this.startY + this.cardRect.height * this.cardNum
     Xiaoxiaole.startX = this.startX
     Xiaoxiaole.startY = this.startY
     this.animationDuration = 2
@@ -87,6 +89,69 @@ class Xiaoxiaole {
       first: null,
       second: null
     }
+
+    this.Score = class {
+      constructor(ctx, x, y) {
+        this.ctx = ctx
+        this.x = x
+        this.y = y
+        this.scroe = 0
+        var gradient = ctx.createLinearGradient(0, 0, 150, 100)
+        gradient.addColorStop(0, "rgb(255, 0, 0)")
+        gradient.addColorStop(1, "rgb(255, 255, 0)")
+        this.gradient = gradient
+        this.shadowOffset = 5
+        this.waitScores = []
+        this.status = 'wait'
+        this.draw()
+      }
+      draw() {
+        this.clear()
+        const ctx = this.ctx
+        ctx.save()
+        ctx.font = "bold 36px sans-serif";
+        ctx.shadowColor = "rgba(190, 190, 190, .5)";
+        ctx.shadowOffsetX = this.shadowOffset;
+        ctx.shadowOffsetY = this.shadowOffset;
+        ctx.fillStyle = this.gradient
+        ctx.fillText(this.scroe, this.x, this.y + 27)
+        ctx.restore()
+      }
+      add(num) {
+        this.waitScores.push(num)
+        if (this.status !== 'running') {
+          this.run()
+        }
+      }
+      run() {
+        if (!this.waitScores.length) return
+        this.status = 'running'
+        const step = this.waitScores.shift()
+        const target = this.scroe + step
+        let timer = setInterval(() => {
+          if (this.scroe >= target) {
+            clearInterval(timer)
+            this.status = 'wait'
+            this.run()
+            return
+          }
+          this.scroe ++
+          this.draw()
+        }, 5)
+      }
+      clear() {
+        const numwidth = 22 + this.shadowOffset
+        const numcount = `${this.scroe}`.length
+        const ctx = this.ctx
+        ctx.save()
+        ctx.fillStyle = 'rgb(0,0,0)'
+        ctx.beginPath()
+        ctx.rect(this.x, this.y - 1, numwidth * numcount, 27 + this.shadowOffset + 2)
+        ctx.fill()
+        ctx.restore()
+      }
+    }
+    this.score = new this.Score(this.ctx, this.endX + 10, this.startY)
   }
   drawCheckerboard() {
     let startX = this.startX,
@@ -146,6 +211,12 @@ class Xiaoxiaole {
   }
   async disappear() {
     this.signBlocks = [...this.signBlockSet]
+    const length = this.signBlocks.length
+    let score = 3
+    if (length !== 3) {
+      score = length * length
+    }
+    this.score.add(score)
     await new Promise(resolve => {
       let timer = setInterval(() => {
         for(let b of this.signBlockSet) {
@@ -201,7 +272,7 @@ class Xiaoxiaole {
       {R: 250, G: 150, B: 155, A: 1},
       {R: 255, G: 255, B: 0, A: 1},
       {R: 0, G: 255, B: 255, A: 1},
-      // {R: 255, G: 0, B: 255, A: 1},
+      {R: 255, G: 0, B: 255, A: 1},
     ]
     return colors[Xiaoxiaole.getRandomNumber(0, colors.length)]
   }
@@ -258,6 +329,12 @@ class Xiaoxiaole {
         this.state.first = this.blocks[j][i]
         this.state.first.itsme()
       } else if (this.state.status === 1) {
+        if (this.state.first === this.blocks[j][i]) {
+          this.state.first.recovery()
+          this.state.status = 0
+          this.state.first = null
+          return
+        }
         if (this.isNear(this.state.first, this.blocks[j][i])) {
           this.state.second = this.blocks[j][i]
           this.state.second.itsme()
