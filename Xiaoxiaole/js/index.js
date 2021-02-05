@@ -17,7 +17,6 @@ class Xiaoxiaole {
     Xiaoxiaole.startX = this.startX
     Xiaoxiaole.startY = this.startY
     this.animationDuration = 2
-    this.is_waiting_clear = false
     this.block_r = this.cardRect.height / 2 - 2
     this.Block = class {
       constructor(r, color, ctx, i, j) {
@@ -81,14 +80,6 @@ class Xiaoxiaole {
         this.draw()
       }
     }
-    this.blocks = []
-    this.signBlockSet = new Set()
-    this.signBlocks = []
-    this.state = {
-      status: 0, // 0 init; 1 click once; 2 click twice
-      first: null,
-      second: null
-    }
 
     this.Score = class {
       constructor(ctx, x, y) {
@@ -103,6 +94,11 @@ class Xiaoxiaole {
         this.shadowOffset = 5
         this.waitScores = []
         this.status = 'wait'
+        this.draw()
+      }
+      reset() {
+        this.clear()
+        this.scroe = 0
         this.draw()
       }
       draw() {
@@ -152,7 +148,65 @@ class Xiaoxiaole {
       }
     }
     this.score = new this.Score(this.ctx, this.endX + 10, this.startY)
+
+    class Button {
+      constructor(ctx, x, y, text) {
+        this.ctx = ctx
+        this.x = x
+        this.y = y - 22
+        this.text = text
+        this.width = this.text.length * 20
+        this.height = 22
+        this.draw()
+      }
+      draw() {
+        const ctx = this.ctx
+        // ctx.save()
+        // ctx.strokeStyle = '#fff'
+        // ctx.beginPath()
+        // ctx.rect(this.x, this.y, this.width, this.height)
+        // ctx.stroke()
+        // ctx.restore()
+        ctx.save()
+        ctx.font = "bold 20px sans-serif";
+        ctx.fillStyle = '#0F0'
+        ctx.fillText(this.text, this.x, this.y + 15)
+        ctx.restore()
+      }
+      checkClickEvent(e) {
+        if (e.x >= this.x && e.x <= this.x + this.width && e.y >= this.y && e.y <= this.y + this.height) {
+          this.run()
+          return true
+        }
+        return false
+      }
+      run() {// must rewrite
+      }
+    }
+    class StartControlButton extends Button {
+      constructor (ctx, x, y, name, game) {
+        super(ctx, x, y, name)
+        this.game = game
+      }
+      run() {
+        this.game.start()
+      }
+    }
+    this.buttons = []
+    this.buttons.push(new StartControlButton(this.ctx, this.endX + 10, this.endY, '开始', this))
   }
+  init() {
+    this.blocks = []
+    this.signBlockSet = new Set()
+    this.signBlocks = []
+    this.score.reset()
+    this.state = {
+      first: null,
+      second: null,
+      status: 0
+    }
+  }
+  
   drawCheckerboard() {
     let startX = this.startX,
       startY = this.startY,
@@ -277,8 +331,13 @@ class Xiaoxiaole {
     return colors[Xiaoxiaole.getRandomNumber(0, colors.length)]
   }
   async run() {
+    this.registerButtonEvent()
     this.drawCheckerboard()
+  }
+  start() {
+    this.init()
     this.produceBlocks()
+    this.registerButtonEvent()
     this.main()
   }
   async main() {
@@ -355,6 +414,11 @@ class Xiaoxiaole {
         }
       }
     }
+  }
+  registerButtonEvent() {
+    window.addEventListener('click', (e) =>  {
+      this.buttons.forEach(b => b.checkClickEvent(e))
+    })
   }
   registerEvent() {
     window.addEventListener('click', this.handleEvent)
