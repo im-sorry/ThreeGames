@@ -29,7 +29,7 @@ class Xiaoxiaole {
         }
         this.i = i
         this.j = j
-        this.animationDuration = 1000
+        this.animationDuration = 2000
         this.disappearStep = (1 - 0.01) / (this.animationDuration / (1000 / 60))
         this.A = 1
         this.downStep = 0
@@ -86,7 +86,7 @@ class Xiaoxiaole {
         this.ctx = ctx
         this.x = x
         this.y = y
-        this.scroe = 0
+        this.score = 0
         var gradient = ctx.createLinearGradient(0, 0, 150, 100)
         gradient.addColorStop(0, "rgb(255, 0, 0)")
         gradient.addColorStop(1, "rgb(255, 255, 0)")
@@ -97,11 +97,10 @@ class Xiaoxiaole {
         this.draw()
       }
       reset() {
-        clearInterval(this.timer)
         this.waitScores = []
         this.status = 'wait'
         this.clear()
-        this.scroe = 0
+        this.score = 0
         this.draw()
       }
       draw() {
@@ -113,7 +112,7 @@ class Xiaoxiaole {
         ctx.shadowOffsetX = this.shadowOffset;
         ctx.shadowOffsetY = this.shadowOffset;
         ctx.fillStyle = this.gradient
-        ctx.fillText(this.scroe, this.x, this.y + 27)
+        ctx.fillText(this.score, this.x, this.y + 27)
         ctx.restore()
       }
       add(num) {
@@ -122,25 +121,30 @@ class Xiaoxiaole {
           this.run()
         }
       }
-      run() {
+      async run() {
         if (!this.waitScores.length) return
         this.status = 'running'
         const step = this.waitScores.shift()
-        const target = this.scroe + step
-        this.timer = setInterval(() => {
-          if (this.scroe >= target) {
-            clearInterval(this.timer)
-            this.status = 'wait'
-            this.run()
-            return
+        const target = this.score + step
+        const self = this
+        await new Promise(resolve => {
+          function main() {
+            if (self.score > target) {
+              resolve()
+              return
+            }
+            self.score ++
+            self.draw()
+            requestAnimationFrame(main)
           }
-          this.scroe ++
-          this.draw()
-        }, 5)
+          main()
+        })
+        this.status = 'wait'
+        this.run()
       }
       clear() {
         const numwidth = 22 + this.shadowOffset
-        const numcount = `${this.scroe}`.length
+        const numcount = `${this.score}`.length
         const ctx = this.ctx
         ctx.save()
         ctx.fillStyle = 'rgb(0,0,0)'
@@ -275,15 +279,17 @@ class Xiaoxiaole {
     }
     this.score.add(score)
     await new Promise(resolve => {
-      this.timer = setInterval(() => {
+      const main = () => {
         for(let b of this.signBlockSet) {
           if(b.disappear()) this.signBlockSet.delete(b)
         }
         if(!this.signBlockSet.size) {
-          clearInterval(this.timer)
           resolve()
+          return
         }
-      }, 1000 / 60)
+        requestAnimationFrame(main)
+      }
+      main()
     })
   }
   async down() {
@@ -628,6 +634,7 @@ class CountDown {
     this.x = x
     this.y = y - 20
     this.time = 60
+    this.now = Date.now()
     this.draw()
   }
   draw() {
@@ -655,12 +662,13 @@ class CountDown {
     this.draw()
   }
   start() {
-    this.timer = setInterval(() => {
-      this.time--
+    if(this.time < 0) return
+    const now = Date.now()
+    if (now - this.now >= 1000) {
+      this.now = now
+      this.time --
       this.draw()
-      if (this.time === 0) {
-        clearInterval(this.timer)
-      }
-    }, 1000)
+    }
+    requestAnimationFrame(this.start.bind(this))
   }
 }
